@@ -1,24 +1,27 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, ClientOnly } from "@tanstack/react-router";
+import { MenuPage } from "@/components/menu/MenuPage";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "Pizzaria Torre Arantes — Cardápio Digital e Delivery" },
+      {
+        name: "description",
+        content:
+          "Peça online na Pizzaria Torre Arantes: pizzas artesanais, esfihas e bebidas com entrega rápida. Pague por PIX, cartão ou dinheiro na entrega.",
+      },
+      { property: "og:title", content: "Pizzaria Torre Arantes — Cardápio Digital" },
+      {
+        property: "og:description",
+        content: "Pizzas artesanais com entrega quentinha. Peça pelo cardápio digital.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: () => (
+    <ClientOnly fallback={<div className="min-h-screen bg-background" />}>
+      <MenuPage />
+    </ClientOnly>
+  ),
 });
-
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
