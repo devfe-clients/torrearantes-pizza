@@ -1,8 +1,0 @@
-{
-  "framework": null,
-  "functions": {
-    "**/__server.func/**": {
-      "runtime": "nodejs22.x"
-    }
-  }
-}
