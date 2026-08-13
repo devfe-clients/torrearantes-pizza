@@ -83,7 +83,11 @@ export class EscPosBuilder {
   }
 }
 
-export type ReceiptOptions = { width?: 32 | 42; shopName?: string; shopPhone?: string };
+export type ReceiptOptions = {
+  width?: 32 | 42 | undefined;
+  shopName?: string | undefined;
+  shopPhone?: string | undefined;
+};
 
 /** Monta a notinha do pedido pronta para a maquininha 58mm. */
 export function buildOrderReceipt(order: Order, opts: ReceiptOptions = {}): Uint8Array {
