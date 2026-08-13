@@ -24,7 +24,7 @@ type Props = {
   settings: ShopSettings | null;
   onChangeQty: (key: string, delta: number) => void;
   onRemove: (key: string) => void;
-  onOrderCreated: (result: { orderId: string; checkoutUrl?: string | null }) => void;
+  onOrderCreated: (result: { orderId: string; checkoutUrl?: string | null | undefined }) => void;
   onClear: () => void;
 };
 
