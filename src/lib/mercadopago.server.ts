@@ -111,9 +111,9 @@ export async function createPixPayment(params: {
 export async function getPayment(paymentId: string): Promise<{
   id: string;
   status: string;
-  status_detail?: string;
-  external_reference?: string;
-  transaction_amount?: number;
+  status_detail?: string | undefined;
+  external_reference?: string | undefined;
+  transaction_amount?: number | undefined;
 }> {
   const res = await fetch(`${MP_API}/v1/payments/${paymentId}`, {
     headers: { authorization: `Bearer ${accessToken()}` },
