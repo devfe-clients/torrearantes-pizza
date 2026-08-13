@@ -17,6 +17,7 @@ import { generateOrderCode } from "./format";
 import type { Coupon, OrderItem, Product, ShopSettings } from "./types";
 
 export const checkoutSchema = z.object({
+  userId: z.string().trim().max(128).optional(),
   customerName: z.string().trim().min(2).max(80),
   customerPhone: z.string().trim().regex(/^\d{10,11}$/, "Telefone inválido"),
   address: z.object({
@@ -186,6 +187,7 @@ export async function processCheckout(
 
   const order = {
     code: orderCode,
+    userId: input.userId ?? null,
     customerName: input.customerName,
     customerPhone: input.customerPhone,
     items: items as unknown as Record<string, unknown>[],

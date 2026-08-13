@@ -77,22 +77,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+{ title: "Pizzaria Torre Arantes — Cardápio Digital e Delivery" },
+{ name: "description", content: "Peça sua pizza online com entrega quentinha na sua casa." },
+{ name: "author", content: "Pizzaria Torre Arantes" },
+{ property: "og:title", content: "Pizzaria Torre Arantes — Cardápio Digital e Delivery" },
+{ property: "og:description", content: "Peça sua pizza online com entrega quentinha na sua casa." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
     ],
-    links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
-    ],
+links: [
+  {
+    rel: "stylesheet",
+    href: appCss,
+  },
+  { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+  { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
+  { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32x32.png" },
+  { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16x16.png" },
+  { rel: "manifest", href: "/site.webmanifest" },
+],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -102,7 +106,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>

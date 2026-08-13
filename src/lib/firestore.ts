@@ -56,7 +56,7 @@ export async function listProducts(): Promise<Product[]> {
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Product, "id">) }));
 }
 
-async function compressImage(base64: string, max = 900): Promise<string> {
+export async function compressImage(base64: string, max = 900): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -83,14 +83,12 @@ async function compressImage(base64: string, max = 900): Promise<string> {
 
 export async function createProduct(p: Omit<Product, "id">) {
   const { db } = getFirebase();
-  const data = p.image ? { ...p, image: await compressImage(p.image) } : p;
-  return addDoc(collection(db, COL_PRODUCTS), { ...data, createdAt: Date.now() });
+  return addDoc(collection(db, COL_PRODUCTS), { ...p, createdAt: Date.now() });
 }
 
 export async function updateProduct(id: string, p: Partial<Product>) {
   const { db } = getFirebase();
-  const data = p.image ? { ...p, image: await compressImage(p.image) } : p;
-  return updateDoc(doc(db, COL_PRODUCTS, id), data as Record<string, unknown>);
+  return updateDoc(doc(db, COL_PRODUCTS, id), p as Record<string, unknown>);
 }
 
 export async function deleteProduct(id: string) {

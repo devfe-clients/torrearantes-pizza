@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { Loader2, Lock } from "lucide-react";
-import logoAsset from "@/assets/logo.jpg.asset.json";
 import { getFirebase, isFirebaseConfigured } from "@/lib/firebase";
 
 export function AuthPage() {
@@ -15,9 +14,13 @@ export function AuthPage() {
   useEffect(() => {
     if (!isFirebaseConfigured()) return;
     const { auth } = getFirebase();
-    return onAuthStateChanged(auth, (user) => {
-      if (user) void navigate({ to: "/admin" });
-    });
+return onAuthStateChanged(auth, (user) => {
+  if (!user) return;
+  const adminEmail = import.meta.env["VITE_ADMIN_EMAIL"];
+  if (!adminEmail || user.email === adminEmail) {
+    void navigate({ to: "/admin" });
+  }
+});
   }, [navigate]);
 
   async function submit(e: React.FormEvent) {
@@ -38,7 +41,7 @@ export function AuthPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-5">
       <form onSubmit={submit} className="panel w-full max-w-sm space-y-4 rounded-3xl p-6">
-        <img src={logoAsset.url} alt="Pizzaria Torre Arantes" className="mx-auto h-20 w-auto" />
+        <img src="/logo-torre-arantes.jpg" alt="Pizzaria Torre Arantes" className="mx-auto h-20 w-auto" />
         <h1 className="text-center text-lg">Painel administrativo</h1>
         <input
           type="email"

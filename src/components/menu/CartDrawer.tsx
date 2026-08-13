@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, type User } from "firebase/auth";
+import { getFirebase, isFirebaseConfigured } from "@/lib/firebase";
 import {
   Minus,
   Plus,
@@ -28,7 +30,7 @@ type Props = {
   onClear: () => void;
 };
 
-type Step = "cart" | "dados" | "pagamento";
+type Step = "cart" | "login" | "dados";
 
 export function CartDrawer(props: Props) {
   const { open, onClose, lines, settings, onChangeQty, onRemove, onOrderCreated, onClear } = props;
@@ -48,6 +50,14 @@ export function CartDrawer(props: Props) {
   const [couponBusy, setCouponBusy] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [authBusy, setAuthBusy] = useState(false);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured()) return;
+    const { auth } = getFirebase();
+    return onAuthStateChanged(auth, setUser);
+  }, []);
 
   const subtotal = cartSubtotal(lines);
   const zone = settings?.deliveryZones?.find(
@@ -71,12 +81,26 @@ export function CartDrawer(props: Props) {
     }
   }
 
+  async function signInWithGoogle() {
+    setAuthBusy(true);
+    try {
+      const { auth } = getFirebase();
+      await signInWithPopup(auth, new GoogleAuthProvider());
+      setStep("dados");
+    } catch {
+      // usuário cancelou ou erro no popup
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
   async function submit() {
     setError(null);
     setSending(true);
     try {
       const res = await createOrderFn({
         data: {
+          userId: user?.uid ?? undefined,
           customerName: name.trim(),
           customerPhone: onlyDigits(phone),
           address: {
@@ -104,8 +128,9 @@ export function CartDrawer(props: Props) {
         setError(res.error);
         return;
       }
-      onClear();
-      onOrderCreated({ orderId: res.orderId, checkoutUrl: res.checkoutUrl });
+onClear();
+localStorage.setItem("last_order_id", res.orderId);
+onOrderCreated({ orderId: res.orderId, checkoutUrl: res.checkoutUrl });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Falha ao enviar o pedido.");
     } finally {
@@ -202,39 +227,47 @@ export function CartDrawer(props: Props) {
             ))
           )}
 
-          {step !== "cart" && lines.length > 0 ? (
+          {step === "login" ? (
+            <div className="flex flex-col items-center gap-5 py-16 text-center">
+              <p className="text-sm text-muted-foreground">
+                Entre com sua conta Google para finalizar o pedido
+              </p>
+            </div>
+          ) : null}
+          {step === "dados" && lines.length > 0 ? (
             <section className="space-y-3 border-t border-border pt-4">
               <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">
                 Entrega
               </h3>
-              <Field label="Nome" value={name} onChange={setName} maxLength={80} />
-              <Field
-                label="WhatsApp"
-                value={phone}
-                onChange={(v) => setPhone(formatPhone(v))}
-                maxLength={16}
-                inputMode="tel"
-              />
-              <div className="grid grid-cols-[1fr_90px] gap-2">
-                <Field label="Rua" value={street} onChange={setStreet} maxLength={120} />
-                <Field label="Nº" value={number} onChange={setNumber} maxLength={12} />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="Bairro" value={district} onChange={setDistrict} maxLength={80} />
-                <Field
-                  label="Complemento"
-                  value={complement}
-                  onChange={setComplement}
-                  maxLength={80}
-                />
-              </div>
-              <Field
-                label="Ponto de referência"
-                value={reference}
-                onChange={setReference}
-                maxLength={120}
-              />
-              <Field label="Observações do pedido" value={note} onChange={setNote} maxLength={300} />
+<Field label="Nome" value={name} onChange={setName} maxLength={80} required />
+<Field
+  label="WhatsApp"
+  value={phone}
+  onChange={(v) => setPhone(formatPhone(v))}
+  maxLength={16}
+  inputMode="tel"
+  required
+/>
+<div className="grid grid-cols-[1fr_90px] gap-2">
+  <Field label="Rua" value={street} onChange={setStreet} maxLength={120} required />
+  <Field label="Nº" value={number} onChange={setNumber} maxLength={12} required />
+</div>
+<div className="grid grid-cols-2 gap-2">
+  <Field label="Bairro" value={district} onChange={setDistrict} maxLength={80} required />
+  <Field
+    label="Complemento"
+    value={complement}
+    onChange={setComplement}
+    maxLength={80}
+  />
+</div>
+<Field
+  label="Ponto de referência"
+  value={reference}
+  onChange={setReference}
+  maxLength={120}
+/>
+<Field label="Observações do pedido" value={note} onChange={setNote} maxLength={300} />
 
               <h3 className="pt-2 text-xs font-semibold uppercase tracking-widest text-primary">
                 Pagamento
@@ -328,10 +361,20 @@ export function CartDrawer(props: Props) {
             <button
               type="button"
               disabled={!canGoData}
-              onClick={() => setStep("dados")}
+              onClick={() => setStep(user ? "dados" : "login")}
               className="w-full rounded-full bg-primary py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
             >
               Continuar
+            </button>
+          ) : step === "login" ? (
+            <button
+              type="button"
+              disabled={authBusy}
+              onClick={() => void signInWithGoogle()}
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            >
+              {authBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Entrar com Google
             </button>
           ) : (
             <button
@@ -368,23 +411,26 @@ function Field({
   onChange,
   maxLength,
   inputMode,
+  required,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   maxLength?: number;
   inputMode?: "tel" | "decimal";
+  required?: boolean;
 }) {
   return (
     <label className="block w-full text-xs text-muted-foreground">
-      {label}
-      <input
-        value={value}
-        maxLength={maxLength}
-        inputMode={inputMode}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-xl border border-input bg-secondary/40 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
-      />
+      {label}{required ? <span className="ml-0.5 text-destructive">*</span> : null}
+<input
+  value={value}
+  maxLength={maxLength}
+  inputMode={inputMode}
+  required={required}
+  onChange={(e) => onChange(e.target.value)}
+  className="mt-1 w-full rounded-xl border border-input bg-secondary/40 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
+/>
     </label>
   );
 }

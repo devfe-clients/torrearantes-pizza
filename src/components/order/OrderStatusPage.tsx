@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { CheckCircle2, Clock, Bike, Package, XCircle, Copy, ArrowLeft } from "lucide-react";
-import logoAsset from "@/assets/logo.jpg.asset.json";
 import { subscribeOrder } from "@/lib/firestore";
-import { isFirebaseConfigured } from "@/lib/firebase";
+import { getFirebase, isFirebaseConfigured } from "@/lib/firebase";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { ORDER_STATUS_LABEL, PAYMENT_LABEL, type Order, type OrderStatus } from "@/lib/types";
 
@@ -22,18 +21,28 @@ export function OrderStatusPage({ orderId }: { orderId: string }) {
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!isFirebaseConfigured()) {
-      setError("Firebase não configurado.");
-      return;
-    }
-    try {
-      return subscribeOrder(orderId, setOrder);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha ao acompanhar o pedido.");
-      return;
-    }
-  }, [orderId]);
+useEffect(() => {
+  if (!isFirebaseConfigured()) {
+    setError("Firebase não configurado.");
+    return;
+  }
+  const { auth } = getFirebase();
+  if (!auth.currentUser) {
+    setError("Faça login com Google para acompanhar seu pedido.");
+    return;
+  }
+  try {
+    return subscribeOrder(orderId, (o) => {
+  setOrder(o);
+  if (o?.status === "entregue" || o?.status === "cancelado") {
+    localStorage.removeItem("last_order_id");
+  }
+});
+  } catch (e) {
+    setError(e instanceof Error ? e.message : "Falha ao acompanhar o pedido.");
+    return;
+  }
+}, [orderId]);
 
   const currentIndex = order ? STEPS.indexOf(order.status) : -1;
 
@@ -45,7 +54,7 @@ export function OrderStatusPage({ orderId }: { orderId: string }) {
 
       <div className="panel space-y-6 rounded-3xl p-6">
         <div className="flex flex-col items-center gap-3 text-center">
-          <img src={logoAsset.url} alt="Pizzaria Torre Arantes" className="h-20 w-auto" />
+          <img src="/logo-torre-arantes.jpg" alt="Pizzaria Torre Arantes" className="h-20 w-auto" />
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           {!order && !error ? (
             <p className="text-sm text-muted-foreground">Carregando seu pedido...</p>
@@ -125,13 +134,22 @@ export function OrderStatusPage({ orderId }: { orderId: string }) {
               </p>
             </section>
 
-            <button
-              type="button"
-              onClick={() => void navigator.clipboard.writeText(order.code)}
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-primary/40 py-2.5 text-xs font-semibold text-primary"
-            >
-              <Copy className="h-3.5 w-3.5" /> Copiar código do pedido
-            </button>
+<div className="flex gap-2">
+  <button
+    type="button"
+    onClick={() => void navigator.clipboard.writeText(order.code)}
+    className="flex flex-1 items-center justify-center gap-2 rounded-full border border-primary/40 py-2.5 text-xs font-semibold text-primary"
+  >
+    <Copy className="h-3.5 w-3.5" /> Copiar código
+  </button>
+  <button
+    type="button"
+    onClick={() => void navigator.clipboard.writeText(window.location.href)}
+    className="flex flex-1 items-center justify-center gap-2 rounded-full border border-primary/40 py-2.5 text-xs font-semibold text-primary"
+  >
+    <Copy className="h-3.5 w-3.5" /> Copiar link
+  </button>
+</div>
           </>
         ) : null}
       </div>

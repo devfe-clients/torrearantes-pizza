@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Search, ShoppingBag, Bike, Clock, Flame, AlertTriangle, Phone } from "lucide-react";
-import logoAsset from "@/assets/logo.jpg.asset.json";
 import { formatBRL } from "@/lib/format";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import { subscribeCategories, subscribeProducts, subscribeShopSettings } from "@/lib/firestore";
@@ -19,6 +18,7 @@ import { CartDrawer } from "./CartDrawer";
 export function MenuPage() {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
+    const [lastOrderId, setLastOrderId] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [settings, setSettings] = useState<ShopSettings | null>(null);
   const [query, setQuery] = useState("");
@@ -30,6 +30,7 @@ export function MenuPage() {
 
   useEffect(() => {
     setLines(loadCart());
+    setLastOrderId(localStorage.getItem("last_order_id"));
   }, []);
 
   useEffect(() => {
@@ -106,7 +107,7 @@ export function MenuPage() {
       <header className="relative overflow-hidden border-b border-primary/20">
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 px-5 py-10 text-center">
           <img
-            src={logoAsset.url}
+            src="/logo-torre-arantes.jpg"
             alt="Pizzaria Torre Arantes"
             className="h-32 w-auto object-contain"
           />
@@ -139,7 +140,20 @@ export function MenuPage() {
         </div>
       ) : null}
 
-      <div className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur">
+{lastOrderId ? (
+  <div className="mx-auto mt-4 flex max-w-4xl items-center justify-between gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm">
+    <span>Você tem um pedido em andamento.</span>
+    <button
+      type="button"
+      onClick={() => void navigate({ to: "/pedido/$orderId", params: { orderId: lastOrderId } })}
+      className="shrink-0 font-semibold text-primary"
+    >
+      Acompanhar →
+    </button>
+  </div>
+) : null}
+
+<div className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto max-w-4xl space-y-3 px-5 py-3">
           <div className="flex items-center gap-2 rounded-full border border-border bg-secondary/40 px-4 py-2.5">
             <Search className="h-4 w-4 text-muted-foreground" />
