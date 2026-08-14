@@ -1,4 +1,5 @@
 import type { Product } from "./types";
+import { effectivePrice, productBasePrice, sizePrice } from "./pricing";
 
 export type CartLine = {
   /** id único da linha (produto + variações) */
@@ -63,13 +64,14 @@ export function estimatePrice(
   flavors: Product[],
   extraIds: string[],
 ): number {
-  let price = product.price ?? 0;
+  let price = productBasePrice(product);
   const size = product.sizes?.find((s) => s.id === sizeId);
-  if (size) price = size.price;
+  if (size) price = sizePrice(size);
   for (const flavor of flavors) {
-    const flavorPrice = size
-      ? (flavor.sizes?.find((s) => s.name === size.name)?.price ?? flavor.price)
-      : flavor.price;
+    const flavorSize = size ? flavor.sizes?.find((s) => s.name === size.name) : undefined;
+    const flavorPrice = flavorSize
+      ? sizePrice(flavorSize)
+      : effectivePrice(flavor.price, flavor.promoPrice);
     price = Math.max(price, flavorPrice);
   }
   for (const id of extraIds) {
