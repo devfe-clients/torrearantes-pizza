@@ -15,6 +15,7 @@ import {
 import { createPixPayment, createPreference, isMercadoPagoConfigured } from "./mercadopago.server";
 import { generateOrderCode } from "./format";
 import type { Coupon, OrderItem, Product, ShopSettings } from "./types";
+import { effectivePrice, productBasePrice, sizePrice } from "./pricing";
 
 export const checkoutSchema = z.object({
   userId: z.string().trim().max(128).optional(),
@@ -76,11 +77,11 @@ async function buildItems(input: CheckoutInput): Promise<{ items: OrderItem[]; s
   for (const line of input.items) {
     const product = await loadProduct(line.productId);
 
-    let unitPrice = product.price ?? 0;
+    let unitPrice = productBasePrice(product);
     let sizeName: string | null = null;
     if (product.sizes?.length) {
       const size = product.sizes.find((s) => s.id === line.sizeId) ?? product.sizes[0]!;
-      unitPrice = size.price;
+      unitPrice = sizePrice(size);
       sizeName = size.name;
     }
 
@@ -92,9 +93,12 @@ async function buildItems(input: CheckoutInput): Promise<{ items: OrderItem[]; s
       for (const flavorId of ids) {
         const flavor = await loadProduct(flavorId);
         flavors.push(flavor.name);
-        const flavorPrice = flavor.sizes?.length
-          ? (flavor.sizes.find((s) => s.name === sizeName)?.price ?? flavor.price)
-          : flavor.price;
+        const flavorSize = flavor.sizes?.length
+          ? flavor.sizes.find((s) => s.name === sizeName)
+          : undefined;
+        const flavorPrice = flavorSize
+          ? sizePrice(flavorSize)
+          : effectivePrice(flavor.price, flavor.promoPrice);
         unitPrice = Math.max(unitPrice, flavorPrice);
       }
     }

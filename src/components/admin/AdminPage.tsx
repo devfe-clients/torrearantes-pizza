@@ -13,6 +13,7 @@ import {
   Trash2,
   Check,
 } from "lucide-react";
+import { toast } from "sonner";
 import { getFirebase, isFirebaseConfigured } from "@/lib/firebase";
 import {
   compressImage,
@@ -40,9 +41,13 @@ import { usePrinter, useAutoPrint } from "@/lib/printer/usePrinter";
 import { useNewOrderBell } from "@/lib/useNewOrder";
 import { isPushSupported, subscribeToPush, unsubscribeFromPush } from "@/lib/push";
 import { Bell, BellOff, Tag, Percent } from "lucide-react";
-import { subscribeCoupons, saveCoupon, deleteCoupon } from "@/lib/firestore";
-import type { Coupon } from "@/lib/types";
-type Tab = "pedidos" | "produtos" | "cupons" | "ajustes";
+import { subscribeCoupons, saveCoupon, deleteCoupon, subscribeCategories } from "@/lib/firestore";
+import type { Category, Coupon } from "@/lib/types";
+import { ProductEditor } from "./ProductEditor";
+import { CategoriesTab } from "./CategoriesTab";
+import { productFromPrice, productListPrice } from "@/lib/pricing";
+import { Pencil, LayoutList } from "lucide-react";
+type Tab = "pedidos" | "produtos" | "categorias" | "cupons" | "ajustes";
 export function AdminPage() {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
@@ -51,6 +56,7 @@ export function AdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
 const [settings, setSettings] = useState<ShopSettings | null>(null);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const printer = usePrinter(settings);
@@ -77,8 +83,9 @@ if (!user || (adminEmail && user.email !== adminEmail)) {
     const u2 = subscribeProducts(setProducts);
     const u3 = subscribeShopSettings(setSettings);
     const u4 = subscribeCoupons(setCoupons);
+    const u5 = subscribeCategories(setCategories);
     void ensureCategoriesSeed().catch(() => undefined);
-    return () => { u1(); u2(); u3(); u4(); };
+    return () => { u1(); u2(); u3(); u4(); u5(); };
   }, []);
 
   useEffect(() => {
@@ -169,6 +176,7 @@ if (!user || (adminEmail && user.email !== adminEmail)) {
           [
             { id: "pedidos", label: `Pedidos (${pending.length})`, icon: ShoppingBag },
             { id: "produtos", label: "Cardápio", icon: Package },
+            { id: "categorias", label: "Categorias", icon: LayoutList },
             { id: "cupons", label: "Cupons", icon: Tag },
             { id: "ajustes", label: "Ajustes", icon: SettingsIcon },
           ] as const
@@ -188,7 +196,10 @@ if (!user || (adminEmail && user.email !== adminEmail)) {
 
       <main className="mx-auto max-w-5xl space-y-4 px-5">
         {tab === "pedidos" ? <OrdersTab orders={orders} printer={printer} /> : null}
-        {tab === "produtos" ? <ProductsTab products={products} /> : null}
+        {tab === "produtos" ? <ProductsTab products={products} categories={categories} /> : null}
+        {tab === "categorias" ? (
+          <CategoriesTab categories={categories} products={products} />
+        ) : null}
         {tab === "cupons" ? <CouponsTab coupons={coupons} /> : null}
         {tab === "ajustes" ? <SettingsTab settings={settings} /> : null}
       </main>
@@ -275,65 +286,103 @@ function OrdersTab({
   );
 }
 
-function ProductsTab({ products }: { products: Product[] }) {
+function ProductsTab({
+  products,
+  categories,
+}: {
+  products: Product[];
+  categories: Category[];
+}) {
   const [name, setName] = useState("");
-  const [category, setCategory] = useState("Pizzas Salgadas");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
   const [price, setPrice] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Product | null>(null);
 
-  async function handleImageSelect(file: File, productId?: string) {
+  const categoryNames = categories.length
+    ? categories.map((c) => c.name)
+    : [...new Set(products.map((p) => p.category))];
+
+  useEffect(() => {
+    if (!category && categoryNames[0]) setCategory(categoryNames[0]);
+  }, [category, categoryNames]);
+
+  function handleImageSelect(file: File) {
     const reader = new FileReader();
     reader.onload = async (e) => {
-      const raw = e.target?.result as string;
-      const compressed = await compressImage(raw);
-      if (productId) {
-        setUploadingId(productId);
-        await updateProduct(productId, { image: compressed }).catch(() => undefined);
-        setUploadingId(null);
-      } else {
-        setImagePreview(compressed);
-      }
+      const compressed = await compressImage(e.target?.result as string);
+      setImagePreview(compressed);
     };
     reader.readAsDataURL(file);
   }
 
   return (
     <div className="space-y-4">
-      <div className="panel flex flex-wrap items-end gap-2 rounded-2xl p-4">
-        <Input label="Nome" value={name} onChange={setName} />
-        <Input label="Categoria" value={category} onChange={setCategory} />
-        <Input label="Preço" value={price} onChange={setPrice} />
-
-        <label className="flex cursor-pointer flex-col text-xs text-muted-foreground">
-          Foto
-          <span className={`mt-1 flex h-9 w-20 items-center justify-center rounded-xl border border-dashed border-input text-[11px] ${imagePreview ? "border-primary text-primary" : ""}`}>
-            {imagePreview ? "✓ pronta" : "+ foto"}
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void handleImageSelect(file);
-              }}
-            />
-          </span>
+      <div className="panel space-y-3 rounded-2xl p-4">
+        <p className="text-sm font-semibold">Novo produto</p>
+        <div className="flex flex-wrap items-end gap-2">
+          <Input label="Nome" value={name} onChange={setName} />
+          <label className="text-xs text-muted-foreground">
+            Categoria
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="mt-1 block w-44 rounded-xl border border-input bg-secondary/40 px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+            >
+              {categoryNames.length === 0 ? <option value="">Crie uma categoria</option> : null}
+              {categoryNames.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Input label="Preço" value={price} onChange={setPrice} />
+          <label className="flex cursor-pointer flex-col text-xs text-muted-foreground">
+            Foto
+            <span
+              className={`mt-1 flex h-9 w-20 items-center justify-center rounded-xl border border-dashed border-input text-[11px] ${imagePreview ? "border-primary text-primary" : ""}`}
+            >
+              {imagePreview ? "pronta" : "+ foto"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageSelect(file);
+                }}
+              />
+            </span>
+          </label>
+        </div>
+        <label className="block text-xs text-muted-foreground">
+          Descrição
+          <textarea
+            value={description}
+            rows={2}
+            maxLength={300}
+            placeholder="Ex.: molho artesanal, mussarela e manjericão fresco."
+            onChange={(e) => setDescription(e.target.value)}
+            className="mt-1 block w-full resize-none rounded-xl border border-input bg-secondary/40 px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+          />
         </label>
-
         <button
           type="button"
-          disabled={!name.trim() || !price}
+          disabled={!name.trim() || !price || !category}
           onClick={() => {
             void createProduct({
               name: name.trim(),
               category: category.trim(),
               price: parsePrice(price),
               available: true,
+              description: description.trim(),
               ...(imagePreview ? { image: imagePreview } : {}),
-            });
+            }).then(() => toast.success("Produto adicionado ao cardápio."));
             setName("");
             setPrice("");
+            setDescription("");
             setImagePreview(null);
           }}
           className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50 transition active:scale-95"
@@ -343,59 +392,76 @@ function ProductsTab({ products }: { products: Product[] }) {
       </div>
 
       <div className="space-y-2">
-        {products.map((p) => (
-          <div key={p.id} className="panel flex items-center gap-3 rounded-xl p-3">
-            <label className="relative h-12 w-12 shrink-0 cursor-pointer overflow-hidden rounded-lg border border-dashed border-input">
-              {p.image ? (
-                <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
-              ) : (
-                <span className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
-                  {uploadingId === p.id ? "…" : "+ foto"}
-                </span>
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) void handleImageSelect(file, p.id);
-                }}
-              />
-            </label>
+        {products.map((p) => {
+          const from = productFromPrice(p);
+          const list = productListPrice(p);
+          return (
+            <div key={p.id} className="panel flex items-center gap-3 rounded-xl p-3">
+              <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border">
+                {p.image ? (
+                  <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                    sem foto
+                  </span>
+                )}
+              </div>
 
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold">{p.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {p.category} ·{" "}
-                {p.sizes?.length
-                  ? p.sizes.map((s) => `${s.name} ${formatBRL(s.price)}`).join(" · ")
-                  : formatBRL(p.price)}
-              </p>
-            </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold">
+                  {p.name}
+                  {list ? (
+                    <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] text-primary">
+                      Promoção
+                    </span>
+                  ) : null}
+                </p>
+                {p.description ? (
+                  <p className="truncate text-[11px] text-muted-foreground">{p.description}</p>
+                ) : null}
+                <p className="text-xs text-muted-foreground">
+                  {p.category} · {formatBRL(from)}
+                  {list ? ` (de ${formatBRL(list)})` : ""}
+                  {typeof p.stock === "number" ? ` · estoque ${p.stock}` : ""}
+                </p>
+              </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => void updateProduct(p.id, { available: !p.available })}
-                className={`rounded-full border px-3 py-1 text-[11px] transition active:scale-95 ${
-                  p.available ? "border-success text-success" : "border-border text-muted-foreground"
-                }`}
-              >
-                <Check className="inline h-3 w-3" /> {p.available ? "Disponível" : "Pausado"}
-              </button>
-              <button
-                type="button"
-                onClick={() => void deleteProduct(p.id)}
-                aria-label="Excluir produto"
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void updateProduct(p.id, { available: !p.available })}
+                  className={`rounded-full border px-3 py-1 text-[11px] transition active:scale-95 ${
+                    p.available ? "border-success text-success" : "border-border text-muted-foreground"
+                  }`}
+                >
+                  <Check className="inline h-3 w-3" /> {p.available ? "Disponível" : "Pausado"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditing(p)}
+                  className="flex items-center gap-1.5 rounded-full border border-primary/40 px-3 py-1 text-[11px] text-primary transition active:scale-95"
+                >
+                  <Pencil className="h-3 w-3" /> Editar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void deleteProduct(p.id)}
+                  aria-label="Excluir produto"
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
+
+      <ProductEditor
+        product={editing}
+        categories={categories}
+        onClose={() => setEditing(null)}
+      />
     </div>
   );
 }

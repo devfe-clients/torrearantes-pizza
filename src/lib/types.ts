@@ -9,6 +9,8 @@ export type Product = {
   description?: string;
   /** preço base (usado quando o produto não tem tamanhos) */
   price: number;
+  /** preço promocional (menor que o preço normal). null/0 = sem promoção */
+  promoPrice?: number | null;
   category: string;
   subcategory?: string | null;
   image?: string;
@@ -30,7 +32,13 @@ export type Product = {
   prepMinutes?: number | null;
 };
 
-export type ProductSize = { id: string; name: string; price: number; slices?: number | null };
+export type ProductSize = {
+  id: string;
+  name: string;
+  price: number;
+  promoPrice?: number | null;
+  slices?: number | null;
+};
 export type ProductExtra = { id: string; name: string; price: number };
 
 export type Category = { name: string; order: number };

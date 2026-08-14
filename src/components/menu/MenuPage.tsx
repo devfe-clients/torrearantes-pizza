@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Search, ShoppingBag, Bike, Clock, Flame, AlertTriangle, Phone } from "lucide-react";
 import { formatBRL } from "@/lib/format";
+import { productFromPrice, productListPrice } from "@/lib/pricing";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import { subscribeCategories, subscribeProducts, subscribeShopSettings } from "@/lib/firestore";
 import type { Category, Product, ShopSettings } from "@/lib/types";
@@ -217,10 +218,19 @@ export function MenuPage() {
                         {product.description}
                       </p>
                     ) : null}
-                    <p className="mt-1.5 text-sm font-semibold text-primary">
-                      {product.sizes?.length
-                        ? `a partir de ${formatBRL(Math.min(...product.sizes.map((s) => s.price)))}`
-                        : formatBRL(product.price)}
+                    <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm font-semibold text-primary">
+                      {product.sizes?.length ? "a partir de " : null}
+                      {formatBRL(productFromPrice(product))}
+                      {productListPrice(product) ? (
+                        <>
+                          <span className="text-xs font-normal text-muted-foreground line-through">
+                            {formatBRL(productListPrice(product)!)}
+                          </span>
+                          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px]">
+                            Promoção
+                          </span>
+                        </>
+                      ) : null}
                     </p>
                   </div>
                 </button>
