@@ -32,7 +32,13 @@ export type Product = {
   prepMinutes?: number | null;
 };
 
-export type ProductSize = { id: string; name: string; price: number; slices?: number | null };
+export type ProductSize = {
+  id: string;
+  name: string;
+  price: number;
+  promoPrice?: number | null;
+  slices?: number | null;
+};
 export type ProductExtra = { id: string; name: string; price: number };
 
 export type Category = { name: string; order: number };
