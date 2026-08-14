@@ -119,7 +119,7 @@ if (!user || (adminEmail && user.email !== adminEmail)) {
   if (!isFirebaseConfigured()) {
     return (
       <div className="mx-auto max-w-md p-8 text-sm text-muted-foreground">
-        Configure as variáveis VITE_FIREBASE_* para usar o painel.
+  Erro de configuração. Entre em contato com o suporte.
       </div>
     );
   }

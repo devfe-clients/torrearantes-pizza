@@ -1,10 +1,3 @@
-/**
- * Regra de negócio do checkout — executa SOMENTE no servidor.
- *
- * Princípio: nada que vem do navegador é confiável. O cliente manda apenas
- * IDs e quantidades; preço, adicionais, taxa de entrega, cupom e total são
- * lidos do Firestore e recalculados aqui.
- */
 import { z } from "zod";
 import {
   adminCreateDoc,

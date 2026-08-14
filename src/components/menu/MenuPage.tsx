@@ -41,7 +41,7 @@ export function MenuPage() {
   useEffect(() => {
     if (!isFirebaseConfigured()) {
       setConfigError(
-        "Firebase ainda não configurado. Preencha as variáveis VITE_FIREBASE_* para carregar o cardápio.",
+        "Erro ao carregar o cardápio. Tente novamente em instantes.",
       );
       return;
     }
@@ -55,7 +55,7 @@ export function MenuPage() {
         u3();
       };
     } catch (e) {
-      setConfigError(e instanceof Error ? e.message : "Falha ao conectar no banco.");
+      setConfigError("Erro ao carregar o cardápio. Tente novamente em instantes.");
       return;
     }
   }, []);

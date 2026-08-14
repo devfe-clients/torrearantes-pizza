@@ -6,7 +6,7 @@ let audio: HTMLAudioElement | null = null;
 function playBell() {
   if (typeof window === "undefined") return;
   if (!audio) {
-    audio = new Audio("/Bell.mp3");
+    audio = new Audio("/bell.mp3");
     audio.volume = 1.0;
   }
   audio.currentTime = 0;

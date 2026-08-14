@@ -23,7 +23,7 @@ export function OrderStatusPage({ orderId }: { orderId: string }) {
 
 useEffect(() => {
   if (!isFirebaseConfigured()) {
-    setError("Firebase não configurado.");
+  setError("Erro ao carregar o pedido. Tente novamente.");
     return;
   }
   const { auth } = getFirebase();
