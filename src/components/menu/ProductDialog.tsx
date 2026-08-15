@@ -92,7 +92,7 @@ export function ProductDialog({ product, products, onClose, onAdd }: Props) {
             <img
               src={product.image}
               alt={product.name}
-              className="h-48 w-full rounded-t-3xl object-cover"
+              className="h-[39rem] w-full rounded-t-3xl object-cover" 
             />
           ) : (
             <div className="flex h-28 items-center justify-center rounded-t-3xl bg-secondary">

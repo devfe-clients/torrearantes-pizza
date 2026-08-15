@@ -104,11 +104,11 @@ export function MenuPage() {
   const closed = settings?.storeClosed;
 
   return (
-    <div className="min-h-screen pb-28">
+    <div className={`min-h-screen ${count > 0 ? "pb-28" : "pb-0"}`}>
       <header className="relative overflow-hidden border-b border-primary/20">
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 px-5 py-10 text-center">
           <img
-            src="/logo-torre-arantes.jpg"
+            src="/IMG_4531.PNG"
             alt="Pizzaria Torre Arantes"
             className="h-32 w-auto object-contain"
           />
@@ -283,6 +283,68 @@ export function MenuPage() {
           void navigate({ to: "/pedido/$orderId", params: { orderId } });
         }}
       />
+<footer className="mt-4 border-t border-primary/20 pt-3 pb-2">
+        <div className="flex flex-row justify-between items-start gap-3 px-3 max-w-2xl mx-auto mb-3">
+
+          <div className="flex flex-col gap-1">
+            <p className="text-primary text-[8px] md:text-[10px] font-semibold tracking-widest uppercase mb-0.5">Redes Sociais</p>
+<a href="https://www.instagram.com/pizza_torrearantes" target="_blank" rel="noopener noreferrer"
+   className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors duration-200 text-[9px] md:text-xs">
+  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+  </svg>
+  @pizza_torrearantes
+</a>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <p className="text-primary text-[8px] md:text-[10px] font-semibold tracking-widest uppercase mb-0.5">Pagamentos</p>
+            <span className="flex items-center gap-1 text-muted-foreground text-[9px] md:text-xs">
+              <svg width="10" height="10" viewBox="0 0 512 512" fill="currentColor"><path d="M112.57 391.19a72.31 72.31 0 0 0 51.36-21.27l86.44-86.45a11.75 11.75 0 0 1 16.56 0l86.77 86.77a72.31 72.31 0 0 0 51.36 21.27h17l-109.3 109.31a75.32 75.32 0 0 1-106.5 0L96.94 391.19zM112.57 120.81h-15.6L206.26 11.5a75.32 75.32 0 0 1 106.5 0L422.07 120.8h-17a72.31 72.31 0 0 0-51.36 21.27l-86.77 86.77a11.71 11.71 0 0 1-16.56 0l-86.44-86.44a72.31 72.31 0 0 0-51.37-21.59zM21.5 206.26l73.72-73.72h17.35a47.35 47.35 0 0 1 33.62 13.93l86.45 86.45a36.68 36.68 0 0 0 51.84 0l86.77-86.77a47.35 47.35 0 0 1 33.62-13.93h22.78l73.87 73.87a75.32 75.32 0 0 1 0 106.5l-73.87 73.87h-22.78a47.35 47.35 0 0 1-33.62-13.93l-86.77-86.77a36.91 36.91 0 0 0-51.84 0l-86.45 86.45a47.35 47.35 0 0 1-33.62 13.93H95.22L21.5 312.76a75.32 75.32 0 0 1 0-106.5z"/></svg>
+              PIX
+            </span>
+            <span className="flex items-center gap-1 text-muted-foreground text-[9px] md:text-xs">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              Crédito/Débito
+            </span>
+            <span className="flex items-center gap-1 text-muted-foreground text-[9px] md:text-xs">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Dinheiro
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <p className="text-primary text-[8px] md:text-[10px] font-semibold tracking-widest uppercase mb-0.5">Localização</p>
+            <a href="https://maps.google.com/?q=Torre+Arantes+Pizzaria" target="_blank" rel="noopener noreferrer"
+              className="flex items-start gap-1 text-muted-foreground hover:text-primary transition-colors duration-200 text-[9px] md:text-xs">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              <span>Rua comendador Otto Carlos Golanda, 200<br/>- Ocian</span>
+            </a>
+          </div>
+
+        </div>
+        <div className="flex items-center justify-center gap-3 mb-2 opacity-20">
+          <div className="h-px w-16 bg-primary" />
+          <div className="w-1 h-1 rounded-full bg-primary" />
+          <div className="h-px w-16 bg-primary" />
+        </div>
+
+        <div className="flex flex-col items-center gap-1 text-center pb-1">
+          <p className="text-muted-foreground text-[10px] opacity-40">
+            © {new Date().getFullYear()} Torre Arantes Pizzaria — Todos os direitos reservados
+          </p>
+          <a
+            href="https://fhtech.vercel.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity duration-300 text-[10px] text-muted-foreground"
+          >
+            Developed by <span className="text-primary font-semibold">FH Tech</span>
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }
