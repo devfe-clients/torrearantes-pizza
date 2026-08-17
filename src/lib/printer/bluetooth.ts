@@ -105,7 +105,6 @@ export async function printBytes(data: Uint8Array): Promise<void> {
     await new Promise((r) => setTimeout(r, 50));
   }
 }
-
 /** Fallback Android: abre o app RawBT com os bytes já formatados. */
 export function printViaRawBT(data: Uint8Array) {
   let binary = "";
