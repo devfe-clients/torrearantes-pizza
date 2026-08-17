@@ -13,7 +13,7 @@ export class EscPosBuilder {
   private chunks: number[] = [];
   constructor(private readonly width: number = 32) {
     this.raw([ESC, 0x40]); // init
-    this.raw([ESC, 0x74, 0x10]); // code page WPC1252 (acentos)
+    this.raw([ESC, 0x74, 0x00]); // PC437 (sem acentos, mas estável)
   }
 
   raw(bytes: number[]) {

@@ -14,6 +14,8 @@ export type Product = {
   category: string;
   subcategory?: string | null;
   image?: string;
+  /** galeria de fotos (a primeira é a capa) */
+  images?: string[];
   available: boolean;
   featured?: boolean;
   order?: number;

@@ -1,15 +1,3 @@
-/**
- * Integração Mercado Pago (estrutura pronta — só faltam as credenciais).
- *
- * CONFIGURAÇÃO (secrets do servidor):
- *   MERCADOPAGO_ACCESS_TOKEN   -> token privado da conta da pizzaria
- *   MERCADOPAGO_WEBHOOK_SECRET -> "Assinatura secreta" do painel de webhooks
- *   PUBLIC_SITE_URL            -> ex.: https://torrearantes.com.br
- *
- * O frontend NUNCA fala com o Mercado Pago diretamente: valor, itens e total
- * são calculados no servidor e o status só é atualizado pelo webhook assinado.
- */
-
 const MP_API = "https://api.mercadopago.com";
 
 export function isMercadoPagoConfigured(): boolean {
@@ -128,11 +116,6 @@ export async function getPayment(paymentId: string): Promise<{
     transaction_amount: data["transaction_amount"] as number | undefined,
   };
 }
-
-/**
- * Valida a assinatura do webhook (header x-signature: ts=...,v1=...).
- * Manifest: id:<data.id>;request-id:<x-request-id>;ts:<ts>;
- */
 export async function verifyWebhookSignature(params: {
   signatureHeader: string | null;
   requestId: string | null;

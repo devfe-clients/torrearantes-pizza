@@ -14,7 +14,7 @@ type Draft = {
   stock: string;
   available: boolean;
   featured: boolean;
-  image: string | null;
+  images: string[];
   sizes: ProductSize[];
 };
 
@@ -28,7 +28,8 @@ function toDraft(p: Product): Draft {
     stock: p.stock === null || p.stock === undefined ? "" : String(p.stock),
     available: p.available,
     featured: Boolean(p.featured),
-    image: p.image ?? null,
+    // compatibilidade: migra image legado para o array
+    images: p.images?.length ? p.images : p.image ? [p.image] : [],
     sizes: p.sizes ?? [],
   };
 }
@@ -55,13 +56,15 @@ export function ProductEditor({
     setDraft((d) => (d ? { ...d, [key]: value } : d));
   }
 
-  function handleImage(file: File) {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const compressed = await compressImage(e.target?.result as string);
-      set("image", compressed);
-    };
-    reader.readAsDataURL(file);
+  function handleImages(files: FileList) {
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const compressed = await compressImage(e.target?.result as string);
+        setDraft((d) => (d ? { ...d, images: [...d.images, compressed] } : d));
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   async function handleSave() {
@@ -87,7 +90,8 @@ export function ProductEditor({
         stock: draft.stock === "" ? null : Math.max(0, Number(draft.stock) || 0),
         available: draft.available,
         featured: draft.featured,
-        image: draft.image ?? "",
+        image: draft.images[0] ?? "",
+        images: draft.images,
         sizes: draft.sizes.length ? draft.sizes : null,
       });
       toast.success("Produto atualizado.");
@@ -115,24 +119,7 @@ export function ProductEditor({
 
         <div className="space-y-4">
           <div className="flex gap-3">
-            <label className="relative h-24 w-24 shrink-0 cursor-pointer overflow-hidden rounded-2xl border border-dashed border-input">
-              {draft.image ? (
-                <img src={draft.image} alt={draft.name} className="h-full w-full object-cover" />
-              ) : (
-                <span className="flex h-full w-full flex-col items-center justify-center gap-1 text-[10px] text-muted-foreground">
-                  <ImageOff className="h-4 w-4" /> trocar foto
-                </span>
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleImage(file);
-                }}
-              />
-            </label>
+            {/* galeria de fotos */}
             <div className="flex-1 space-y-2">
               <Field label="Nome">
                 <input
@@ -157,16 +144,47 @@ export function ProductEditor({
                     ))}
                 </select>
               </Field>
-              {draft.image ? (
+            </div>
+          </div>
+
+          {/* miniaturas + botão adicionar */}
+          <div className="flex flex-wrap gap-2">
+            {draft.images.map((src, i) => (
+              <div key={i} className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-border">
+                <img src={src} alt={`Foto ${i + 1}`} className="h-full w-full object-cover" />
                 <button
                   type="button"
-                  onClick={() => set("image", null)}
-                  className="text-[11px] text-muted-foreground underline"
+                  aria-label="Remover foto"
+                  onClick={() => set("images", draft.images.filter((_, j) => j !== i))}
+                  className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white"
                 >
-                  Remover foto
+                  <X className="h-3 w-3" />
                 </button>
-              ) : null}
-            </div>
+                {i === 0 && draft.images.length > 1 ? (
+                  <span className="absolute bottom-1 left-1 rounded-full bg-primary/80 px-1.5 py-0.5 text-[9px] font-semibold text-white">
+                    capa
+                  </span>
+                ) : null}
+              </div>
+            ))}
+            <label className="flex h-20 w-20 shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-input text-[10px] text-muted-foreground hover:border-primary hover:text-primary">
+              <Plus className="h-4 w-4" />
+              adicionar foto
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files?.length) handleImages(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          </div>
+
+          {/* abre o bloco de nome/categoria que estava dentro do flex gap-3 */}
+          <div className="hidden">
           </div>
 
           <Field label="Descrição">

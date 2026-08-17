@@ -12,6 +12,7 @@ import {
   Plus,
   Trash2,
   Check,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getFirebase, isFirebaseConfigured } from "@/lib/firebase";
@@ -297,7 +298,7 @@ function ProductsTab({
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [price, setPrice] = useState("");
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [editing, setEditing] = useState<Product | null>(null);
 
   const categoryNames = categories.length
@@ -308,13 +309,15 @@ function ProductsTab({
     if (!category && categoryNames[0]) setCategory(categoryNames[0]);
   }, [category, categoryNames]);
 
-  function handleImageSelect(file: File) {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const compressed = await compressImage(e.target?.result as string);
-      setImagePreview(compressed);
-    };
-    reader.readAsDataURL(file);
+  function handleImageSelect(files: FileList) {
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const compressed = await compressImage(e.target?.result as string);
+        setImagePreviews((prev) => [...prev, compressed]);
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   return (
@@ -339,23 +342,36 @@ function ProductsTab({
             </select>
           </label>
           <Input label="Preço" value={price} onChange={setPrice} />
-          <label className="flex cursor-pointer flex-col text-xs text-muted-foreground">
-            Foto
-            <span
-              className={`mt-1 flex h-9 w-20 items-center justify-center rounded-xl border border-dashed border-input text-[11px] ${imagePreview ? "border-primary text-primary" : ""}`}
-            >
-              {imagePreview ? "pronta" : "+ foto"}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleImageSelect(file);
-                }}
-              />
-            </span>
-          </label>
+          <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+            Fotos
+            <div className="flex flex-wrap gap-1">
+              {imagePreviews.map((src, i) => (
+                <div key={i} className="relative h-9 w-9 overflow-hidden rounded-lg border border-primary">
+                  <img src={src} alt="" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setImagePreviews((prev) => prev.filter((_, j) => j !== i))}
+                    className="absolute right-0 top-0 rounded-full bg-black/60 p-px text-white"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </div>
+              ))}
+              <label className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-dashed border-input text-[11px] ${imagePreviews.length ? "border-primary text-primary" : ""}`}>
+                +
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files?.length) handleImageSelect(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+          </div>
         </div>
         <label className="block text-xs text-muted-foreground">
           Descrição
@@ -378,12 +394,12 @@ function ProductsTab({
               price: parsePrice(price),
               available: true,
               description: description.trim(),
-              ...(imagePreview ? { image: imagePreview } : {}),
+              ...(imagePreviews.length ? { image: imagePreviews[0], images: imagePreviews } : {}),
             }).then(() => toast.success("Produto adicionado ao cardápio."));
             setName("");
             setPrice("");
             setDescription("");
-            setImagePreview(null);
+            setImagePreviews([]);
           }}
           className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50 transition active:scale-95"
         >
@@ -398,8 +414,8 @@ function ProductsTab({
           return (
             <div key={p.id} className="panel flex items-center gap-3 rounded-xl p-3">
               <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border">
-                {p.image ? (
-                  <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
+                {p.images?.[0] ?? p.image ? (
+                  <img src={p.images?.[0] ?? p.image} alt={p.name} className="h-full w-full object-cover" />
                 ) : (
                   <span className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
                     sem foto
