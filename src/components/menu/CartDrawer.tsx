@@ -26,7 +26,11 @@ type Props = {
   settings: ShopSettings | null;
   onChangeQty: (key: string, delta: number) => void;
   onRemove: (key: string) => void;
-  onOrderCreated: (result: { orderId: string; checkoutUrl?: string | null | undefined }) => void;
+  onOrderCreated: (result: {
+    orderId: string;
+    checkoutUrl?: string | null | undefined;
+    pix?: { qrCode: string; qrCodeBase64: string; expiresAt: string | null } | null | undefined;
+  }) => void;
   onClear: () => void;
 };
 
@@ -50,6 +54,8 @@ export function CartDrawer(props: Props) {
   const [couponBusy, setCouponBusy] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [pixData, setPixData] = useState<{ qrCode: string; qrCodeBase64: string; expiresAt: string | null } | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [authBusy, setAuthBusy] = useState(false);
 
@@ -96,6 +102,8 @@ export function CartDrawer(props: Props) {
 
   async function submit() {
     setError(null);
+    setWarning(null);
+    setPixData(null);
     setSending(true);
     try {
       const res = await createOrderFn({
@@ -128,9 +136,21 @@ export function CartDrawer(props: Props) {
         setError(res.error);
         return;
       }
-onClear();
-localStorage.setItem("last_order_id", res.orderId);
-onOrderCreated({ orderId: res.orderId, checkoutUrl: res.checkoutUrl });
+      onClear();
+      localStorage.setItem("last_order_id", res.orderId);
+      // Redireciona para o Checkout Pro do Mercado Pago (cartão)
+      if (res.checkoutUrl) {
+        window.location.href = res.checkoutUrl;
+        return;
+      }
+      // PIX Mercado Pago: exibe QR inline e repassa para o chamador
+      if (res.pix) {
+        setPixData(res.pix);
+      }
+      if (res.warning) {
+        setWarning(res.warning);
+      }
+      onOrderCreated({ orderId: res.orderId, checkoutUrl: res.checkoutUrl, pix: res.pix });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Falha ao enviar o pedido.");
     } finally {
@@ -356,6 +376,34 @@ onOrderCreated({ orderId: res.orderId, checkoutUrl: res.checkoutUrl });
             </p>
           ) : null}
           {error ? <p className="text-xs text-destructive">{error}</p> : null}
+          {warning ? <p className="text-xs text-amber-500">{warning}</p> : null}
+          {pixData ? (
+            <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-secondary/30 p-4">
+              <p className="text-xs font-semibold text-primary">Pague com PIX</p>
+              {pixData.qrCodeBase64 ? (
+                <img
+                  src={`data:image/png;base64,${pixData.qrCodeBase64}`}
+                  alt="QR Code PIX"
+                  className="h-40 w-40 rounded-lg"
+                />
+              ) : null}
+              <p className="break-all text-center text-[10px] text-muted-foreground select-all">
+                {pixData.qrCode}
+              </p>
+              <button
+                type="button"
+                onClick={() => void navigator.clipboard.writeText(pixData.qrCode)}
+                className="rounded-full border border-primary/40 px-4 py-1.5 text-xs font-semibold text-primary"
+              >
+                Copiar código PIX
+              </button>
+              {pixData.expiresAt ? (
+                <p className="text-[10px] text-muted-foreground">
+                  Expira em {new Date(pixData.expiresAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           {step === "cart" ? (
             <button

@@ -102,7 +102,7 @@ export async function printBytes(data: Uint8Array): Promise<void> {
   for (let i = 0; i < data.length; i += CHUNK_SIZE) {
     const slice = data.slice(i, i + CHUNK_SIZE);
     await characteristic.writeValue(slice as unknown as BufferSource);
-    await new Promise((r) => setTimeout(r, 25));
+    await new Promise((r) => setTimeout(r, 50));
   }
 }
 
