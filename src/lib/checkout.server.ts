@@ -237,7 +237,7 @@ export async function processCheckout(
       orderId,
       amount: total,
       description: `Pedido ${orderCode} — Pizzaria Torre Arantes`,
-      payerEmail: `pedido-${orderCode.toLowerCase()}@torrearantes.com.br`,
+      payerEmail: `pedido${orderId.replace(/-/g, "").slice(0, 20)}@torrearantes.com.br`,
       payerName: input.customerName,
       notificationUrl,
     });
