@@ -1,17 +1,3 @@
-/**
- * Acesso privilegiado ao Firestore pelo servidor (Cloudflare Worker).
- *
- * Não usa firebase-admin (Node-only). Assina um JWT RS256 da service account
- * com Web Crypto, troca por um access token OAuth e fala com a REST API do
- * Firestore. É esse caminho que o webhook do Mercado Pago usa para marcar o
- * pedido como PAGO — o cliente nunca pode fazer isso.
- *
- * CONFIGURAÇÃO (secrets do servidor, nunca VITE_):
- *   FIREBASE_PROJECT_ID
- *   FIREBASE_CLIENT_EMAIL
- *   FIREBASE_PRIVATE_KEY   (com \n escapados)
- */
-
 type Json = Record<string, unknown>;
 
 function env(name: string): string {
